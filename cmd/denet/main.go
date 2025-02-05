@@ -29,15 +29,11 @@ const (
 func main() {
 	cfg := config.MustLoad()
 	log := setupLogger(cfg.Env)
-	// log = log.With(slog.String("env", cfg.Env))
-	// log.Info("starting DeNet", slog.String("env", cfg.Env))
-	// log.Debug("debug messages are enabled")
 	storage, err := postgres.New(cfg.StoragePath)
 	if err != nil {
 		log.Error("Failed to init storage", sl.Err(err))
 		os.Exit(1)
 	}
-	// _ = storage
 	router := chi.NewRouter()
 	router.Use(middleware.Logger)
 	router.Use(middleware.Recoverer)
@@ -45,11 +41,9 @@ func main() {
 
 	router.Post("/users/login", login.NewLogin(log, storage))
 
-	router.Post("/users", save.New(log, storage))
-
 	router.Route("/users/", func(r chi.Router) {
 		r.Use(middlewares.ValidateJWT)
-
+		r.Post("/create", save.New(log, storage))
 		r.Get("/{id}/status", info.NewUserInfo(log, storage))
 		r.Get("/leaderboard", leaderboard.NewLeaderboard(log, storage))
 		r.Post("/{id}/task/complete", task.NewTask(log, storage))
@@ -75,12 +69,6 @@ func main() {
 		log.Error("failed to start server")
 	}
 	log.Error("server stopped")
-
-	// TODO: init config: cleanenv
-	// TODO: init logger: slog
-	// TODO: init storage: postgresql
-	// TODO: init router: chi, "chi render"
-	// TODO: init server
 }
 
 func setupLogger(env string) *slog.Logger {
