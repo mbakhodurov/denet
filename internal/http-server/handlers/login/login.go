@@ -67,7 +67,8 @@ func NewLogin(log *slog.Logger, uSERLogin USERLogin) http.HandlerFunc {
 		if err != nil {
 			log.Error("failed to get user", sl.Err(err))
 
-			render.JSON(w, r, response.Error("internal error: "+err.Error()))
+			render.JSON(w, r, response.Error("user not found"))
+			// render.JSON(w, r, response.Error("internal error: "+err.Error()))
 
 			return
 		}

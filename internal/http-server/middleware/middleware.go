@@ -15,8 +15,8 @@ var jwtSecret = []byte("secret_1234")
 
 func GenerateJWT(userID string) (string, error) {
 	claims := jwt.MapClaims{
-		"sub": userID,                             // Идентификатор пользователя
-		"exp": time.Now().Add(time.Minute).Unix(), // Время жизни токена 1 минута
+		"sub": userID,                                 // Идентификатор пользователя
+		"exp": time.Now().Add(time.Minute * 4).Unix(), // Время жизни токена 1 минута
 		"nbf": time.Now().Unix(),
 		"iat": time.Now().Unix(),
 	}
@@ -32,7 +32,6 @@ func GenerateJWT(userID string) (string, error) {
 
 func ValidateJWT(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		const op = "handlers.url.uSERInfo.New"
 
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
