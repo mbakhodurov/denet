@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"denet/internal/config"
 	"denet/internal/http-server/handlers/info"
 	"denet/internal/http-server/handlers/leaderboard"
@@ -15,6 +16,9 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/chi/v5"
@@ -65,10 +69,34 @@ func main() {
 		WriteTimeout: cfg.HTTPServer.Timeout,
 		IdleTimeout:  cfg.HTTPServer.IdleTimeout,
 	}
-	if err := srv.ListenAndServe(); err != nil {
-		log.Error("failed to start server")
+
+	done := make(chan os.Signal, 1)
+	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		if err := srv.ListenAndServe(); err != nil {
+			log.Error("failed to start server")
+		}
+	}()
+
+	log.Info("server started")
+
+	<-done
+	log.Info("stopping server")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Error("failed to stop server", sl.Err(err))
+
+		return
 	}
-	log.Error("server stopped")
+	log.Info("server stopped")
+	// if err := srv.ListenAndServe(); err != nil {
+	// 	log.Error("failed to start server")
+	// }
+	// log.Error("server stopped")
 }
 
 func setupLogger(env string) *slog.Logger {
